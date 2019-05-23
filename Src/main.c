@@ -1,5 +1,52 @@
 #include "main.h"
 
+//definitions and comments //maybe we should also have lookup tables, and in that case maybe the configuring over flash should be dropped completely
+//this stuff should be moved to flash, but I don't feel like messing with that right now
+#define fiveVoltDivider 6.40656410285 //22k/39k, also includes conversion to mV
+#define twelveVoltDivider 15.3600000016 //33k/12k, also includes conversion to mV
+
+//this should definitely be moved to flash in the future
+//more complex equations should be used anyway, this way is kind of dumb
+uint32_t sensorAdjustment[8] =
+{
+	(200/fiveVoltDivider),	//brake temperature sensor in C or K
+	(200/fiveVoltDivider),	//brake temperature sensor in C or K
+	(6.25/twelveVoltDivider),	//rear suspension sensor when powered by 12V in mm
+	(6.25/twelveVoltDivider),	//rear suspension sensor when powered by 12V in mm
+	(66.6017642561/fiveVoltDivider),	//front suspension sensor in mm
+	(66.6017642561/fiveVoltDivider),	//front suspension sensor in mm
+	1,	//unused
+	1	//unused
+};
+
+int32_t sensorAdjustmentB[8] =
+{
+		-100,		//brake temperature sensor in C
+		-100,		//brake temperature sensor in C
+		0,
+		0,
+		0,
+		0,
+		0,
+		0
+};
+
+//this corresponds to above things and should also be moved to flash in the future definitely
+//this should probably be determined programatically in the future, maybe, especially if in the flash
+uint32_t significantByteShift[8] =
+{
+	4,
+	4,
+	4,
+	4,
+	0,	//we want least significant bits for these because the rotation thing I think
+	0,	//same as above
+	4,
+	4
+};
+
+/* ID 7FF, F6 FF 0 1A 0 64 */ //this is for six sensors on PA1, PA2, PA4, PA5, PA6, and PA7; and it sends every 10 mS on ID 1A
+
 //constants
 const int adc_channels[9] = {ADC_CHANNEL_0, ADC_CHANNEL_1, ADC_CHANNEL_2, ADC_CHANNEL_3, ADC_CHANNEL_4, ADC_CHANNEL_5, ADC_CHANNEL_6, ADC_CHANNEL_7, ADC_CHANNEL_8};
 const int adc_ranks[9] = {ADC_REGULAR_RANK_1, ADC_REGULAR_RANK_2, ADC_REGULAR_RANK_3, ADC_REGULAR_RANK_4, ADC_REGULAR_RANK_5, ADC_REGULAR_RANK_6, ADC_REGULAR_RANK_7, ADC_REGULAR_RANK_8, ADC_REGULAR_RANK_9};
@@ -315,14 +362,15 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 			for(int i=0; i<ADC1_INPUTS_NUMB; i++) //this won't work if ADC1_INPUTS_NUMB > 8
 			{
-				if(ADC1_INPUTS_NUMB<=4)
+				uint32_t data = adc1Values[i]*sensorAdjustment[i]+sensorAdjustmentB[i];
+				if(ADC1_INPUTS_NUMB<=0/*4*/) //this should be fixed in the case that 4 or fewer sensors are used
 				{
 					txData1[i*2]=adc1Values[i]>>8;
 					txData1[i*2+1]=adc1Values[i];
 				}
 				else
 				{
-					txData1[i]=adc1Values[i]>>4;
+					txData1[i]=data>>significantByteShift[i];
 				}
 			}
 
