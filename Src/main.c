@@ -1,58 +1,13 @@
 #include "main.h"
 
-//definitions and comments //maybe we should also have lookup tables, and in that case maybe the configuring over flash should be dropped completely
-//this stuff should be moved to flash, but I don't feel like messing with that right now
-#define fiveVoltDivider 6.40656410285 //22k/39k, also includes conversion to mV
-#define twelveVoltDivider 15.3600000016 //33k/12k, also includes conversion to mV
-
-//this should definitely be moved to flash in the future
-//more complex equations should be used anyway, this way is kind of dumb
-uint32_t sensorAdjustment[8] =
-{
-	(200/fiveVoltDivider),	//brake temperature sensor in C or K
-	(200/fiveVoltDivider),	//brake temperature sensor in C or K
-	(6.25/twelveVoltDivider),	//rear suspension sensor when powered by 12V in mm
-	(6.25/twelveVoltDivider),	//rear suspension sensor when powered by 12V in mm
-	(66.6017642561/fiveVoltDivider),	//front suspension sensor in mm
-	(66.6017642561/fiveVoltDivider),	//front suspension sensor in mm
-	1,	//unused
-	1	//unused
-};
-
-int32_t sensorAdjustmentB[8] =
-{
-		-100,		//brake temperature sensor in C
-		-100,		//brake temperature sensor in C
-		0,
-		0,
-		0,
-		0,
-		0,
-		0
-};
-
-//this corresponds to above things and should also be moved to flash in the future definitely
-//this should probably be determined programatically in the future, maybe, especially if in the flash
-uint32_t significantByteShift[8] =
-{
-	4,
-	4,
-	4,
-	4,
-	0,	//we want least significant bits for these because the rotation thing I think
-	0,	//same as above
-	4,
-	4
-};
-
-/* ID 7FF, F6 FF 0 1A 0 64 */ //this is for six sensors on PA1, PA2, PA4, PA5, PA6, and PA7; and it sends every 10 mS on ID 1A
+#include "sensorFunctions.h"
 
 //constants
-const int adc_channels[9] = {ADC_CHANNEL_0, ADC_CHANNEL_1, ADC_CHANNEL_2, ADC_CHANNEL_3, ADC_CHANNEL_4, ADC_CHANNEL_5, ADC_CHANNEL_6, ADC_CHANNEL_7, ADC_CHANNEL_8};
-const int adc_ranks[9] = {ADC_REGULAR_RANK_1, ADC_REGULAR_RANK_2, ADC_REGULAR_RANK_3, ADC_REGULAR_RANK_4, ADC_REGULAR_RANK_5, ADC_REGULAR_RANK_6, ADC_REGULAR_RANK_7, ADC_REGULAR_RANK_8, ADC_REGULAR_RANK_9};
+const int adc_channels[ADC_CHANNELS] = {ADC_CHANNEL_0, ADC_CHANNEL_1, ADC_CHANNEL_2, ADC_CHANNEL_3, ADC_CHANNEL_4, ADC_CHANNEL_5, ADC_CHANNEL_6, ADC_CHANNEL_7, ADC_CHANNEL_8};
+const int adc_ranks[ADC_CHANNELS] = {ADC_REGULAR_RANK_1, ADC_REGULAR_RANK_2, ADC_REGULAR_RANK_3, ADC_REGULAR_RANK_4, ADC_REGULAR_RANK_5, ADC_REGULAR_RANK_6, ADC_REGULAR_RANK_7, ADC_REGULAR_RANK_8, ADC_REGULAR_RANK_9};
 
 //global variables
-int adc1Values[ADC1_INPUTS_NUMB_MAX], adc1Buffer[ADC1_INPUTS_NUMB_MAX];
+int adc1Values[ADC_CHANNELS], adc1Buffer[ADC_CHANNELS];
 
 ADC_HandleTypeDef hadc1;
 DMA_HandleTypeDef hdma_adc1;
@@ -76,37 +31,15 @@ static void MX_ADC1_Init(void);
 static void MX_TIM3_Init(void);
 static void MX_CAN_Init(void);
 
-void Flash_Write(uint32_t, uint32_t[256], int);
-uint32_t Flash_Read(uint32_t);
-
-//external functions
-extern void FLASH_PageErase(uint32_t PageAddress);
-
 #if WATCHDOG
 	static void MX_IWDG_Init(void);
 #endif
-
-volatile uint x=0;
 
 int main(void)
 {
 	HAL_Init();
 
 	SystemClock_Config();
-
-	if(Flash_Read(FLASH_PAGE_63)==0xFFFFFFFF) //initialize the flash to avoid errors
-	{
-		uint32_t data[256] = {0};
-
-		data[ADC_ENABLES_POS]=0x03;
-		data[ADC1_INPUTS_NUMB_POS]=2;
-		data[ADC_SAMPLE_RATE_POS] = ADC_SAMPLETIME_239CYCLES_5;
-		data[CAN_ID_POS]=0x01;
-		data[CAN_DLC_POS]=4;
-		data[MESSAGE_TIM_PERIOD_POS]=1000;
-
-		Flash_Write(FLASH_PAGE_63, data, 6);
-	}
 
 	MX_GPIO_Init();
 	MX_DMA_Init();
@@ -119,7 +52,7 @@ int main(void)
 		Error_Handler();
 	}
 
-	if(HAL_ADC_Start_DMA(&hadc1, (uint32_t*)adc1Buffer, ADC1_INPUTS_NUMB) != HAL_OK)
+	if(HAL_ADC_Start_DMA(&hadc1, (uint32_t*)adc1Buffer, ADC_CHANNELS) != HAL_OK)
 	{
 		Error_Handler();
 	}
@@ -156,7 +89,7 @@ int main(void)
 #endif
 
 		HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
-		HAL_Delay(Flash_Read(FLASH_PAGE_63+(0x4*4)));
+		HAL_Delay(MESSAGE_TIM_PERIOD);
 	}
 }
 
@@ -232,7 +165,7 @@ static void MX_ADC1_Init(void)
 	hadc1.Init.DiscontinuousConvMode = DISABLE;
 	hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
 	hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
-	hadc1.Init.NbrOfConversion = ADC1_INPUTS_NUMB;
+	hadc1.Init.NbrOfConversion = ADC_CHANNELS;
 	if(HAL_ADC_Init(&hadc1) != HAL_OK)
 	{
 		Error_Handler();
@@ -240,19 +173,47 @@ static void MX_ADC1_Init(void)
 
 	sConfig.SamplingTime = ADC_SAMPLE_RATE;
 
-	int j=0;
-	for(int i=0; i<ADC1_INPUTS_NUMB_MAX; i++)
+
+	sConfig.Channel=ADC_CHANNEL_0;
+	sConfig.Rank=ADC_REGULAR_RANK_1;
+	if(HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
 	{
-		if((ADC_ENABLES&(1<<i)))
-		{
-			sConfig.Channel=adc_channels[i];
-			sConfig.Rank=adc_ranks[j];
-			if(HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
-			{
-				Error_Handler();
-			}
-			j++;
-		}
+		Error_Handler();
+	}
+
+	sConfig.Channel=ADC_CHANNEL_1;
+	sConfig.Rank=ADC_REGULAR_RANK_2;
+	if(HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+	{
+		Error_Handler();
+	}
+
+	sConfig.Channel=ADC_CHANNEL_2;
+	sConfig.Rank=ADC_REGULAR_RANK_3;
+	if(HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+	{
+		Error_Handler();
+	}
+
+	sConfig.Channel=ADC_CHANNEL_3;
+	sConfig.Rank=ADC_REGULAR_RANK_4;
+	if(HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+	{
+		Error_Handler();
+	}
+
+	sConfig.Channel=ADC_CHANNEL_4;
+	sConfig.Rank=ADC_REGULAR_RANK_5;
+	if(HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+	{
+		Error_Handler();
+	}
+
+	sConfig.Channel=ADC_CHANNEL_5;
+	sConfig.Rank=ADC_REGULAR_RANK_6;
+	if(HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+	{
+		Error_Handler();
 	}
 }
 
@@ -288,8 +249,6 @@ static void MX_TIM3_Init(void)
 
 static void MX_CAN_Init(void)
 {
-	CAN_FilterTypeDef sFilterConfig;
-
 	hcan1.Instance = CAN1;
 	hcan1.Init.Prescaler = 2;
 	hcan1.Init.SyncJumpWidth = CAN_SJW_1TQ;
@@ -302,21 +261,6 @@ static void MX_CAN_Init(void)
 	hcan1.Init.AutoRetransmission = DISABLE;
 	hcan1.Init.TransmitFifoPriority = DISABLE;
 	if(HAL_CAN_Init(&hcan1) != HAL_OK)
-	{
-		Error_Handler();
-	}
-
-	sFilterConfig.FilterBank = 0;
-	sFilterConfig.FilterMode = CAN_FILTERMODE_IDMASK;
-	sFilterConfig.FilterScale = CAN_FILTERSCALE_32BIT;
-	sFilterConfig.FilterIdHigh = 0xFFE0; //0x0000;
-	sFilterConfig.FilterIdLow = 0x0000;
-	sFilterConfig.FilterMaskIdHigh = 0xFFE0; //0x0000;
-	sFilterConfig.FilterMaskIdLow = 0x0000;
-	sFilterConfig.FilterFIFOAssignment = CAN_RX_FIFO0;
-	sFilterConfig.FilterActivation = ENABLE;
-	sFilterConfig.SlaveStartFilterBank = 14;
-	if(HAL_CAN_ConfigFilter(&hcan1, &sFilterConfig) != HAL_OK)
 	{
 		Error_Handler();
 	}
@@ -341,7 +285,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *AdcHandle)
 {
 	if(AdcHandle->Instance==hadc1.Instance)
 	{
-		for(int i=0; i<ADC1_INPUTS_NUMB; i++)
+		for(int i=0; i<ADC_CHANNELS; i++)
 		{
 			adc1Values[i]=adc1Buffer[i];
 		}
@@ -356,26 +300,14 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
 	if(htim->Instance == htim3.Instance)
 	{
-		if(ADC_ENABLES)
-		{
-			txData1[0]=0x00; txData1[1]=0x00; txData1[2]=0x00; txData1[3]=0x00; txData1[4]=0x00; txData1[5]=0x00; txData1[6]=0x00; txData1[7]=0x00;
+		txData1[0]=adc1Values[0]; //brake temperature
+		txData1[1]=INFKL800(adc1Values[0])&0xFF;
+		txData1[2]=adc1Values[2]; //rear suspension
+		txData1[3]=linearPot750mm12V(adc1Values[2]);
+		txData1[4]=adc1Values[4]; //front suspension
+		txData1[5]=adc1Values[4];
 
-			for(int i=0; i<ADC1_INPUTS_NUMB; i++) //this won't work if ADC1_INPUTS_NUMB > 8
-			{
-				uint32_t data = adc1Values[i]*sensorAdjustment[i]+sensorAdjustmentB[i];
-				if(ADC1_INPUTS_NUMB<=0/*4*/) //this should be fixed in the case that 4 or fewer sensors are used
-				{
-					txData1[i*2]=adc1Values[i]>>8;
-					txData1[i*2+1]=adc1Values[i];
-				}
-				else
-				{
-					txData1[i]=data>>significantByteShift[i];
-				}
-			}
-
-			HAL_CAN_AddTxMessage(&hcan1, &txHeader1, txData1, &txMailbox1);
-		}
+		HAL_CAN_AddTxMessage(&hcan1, &txHeader1, txData1, &txMailbox1);
 	}
 	else
 	{
@@ -392,86 +324,12 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *CanHandle)
 
 	if(CanHandle->Instance==hcan1.Instance)
 	{
-		if(rxHeader1.StdId==0x7ff)
-		{
-			uint32_t data[256] = {0};
 
-			data[ADC_ENABLES_POS]=rxData1[0];
-			data[ADC1_INPUTS_NUMB_POS]=0;
-			for(int i=0; i<8; i++) //8 is because we are sending a byte, even though max inputs is 9 everywhere else that will never be reached setting values this way
-			{
-				if(rxData1[0]&(1<<i))
-				{
-					data[ADC1_INPUTS_NUMB_POS]+=1;
-				}
-			}
-			if(rxData1[1]>((239-79)/2)+79) { data[ADC_SAMPLE_RATE_POS] = ADC_SAMPLETIME_239CYCLES_5; }
-			else if(rxData1[1]>((79-55)/2)+55) { data[ADC_SAMPLE_RATE_POS] = ADC_SAMPLETIME_71CYCLES_5; }
-			else if(rxData1[1]>((55-41)/2)+41) { data[ADC_SAMPLE_RATE_POS] = ADC_SAMPLETIME_55CYCLES_5; }
-			else if(rxData1[1]>((41-28)/2)+28) { data[ADC_SAMPLE_RATE_POS] = ADC_SAMPLETIME_41CYCLES_5; }
-			else if(rxData1[1]>((28-13)/2)+13) { data[ADC_SAMPLE_RATE_POS] = ADC_SAMPLETIME_28CYCLES_5; }
-			else if(rxData1[1]>((13-7)/2)+7) { data[ADC_SAMPLE_RATE_POS] = ADC_SAMPLETIME_13CYCLES_5; }
-			else if(rxData1[1]>((7-1)/2)+1) { data[ADC_SAMPLE_RATE_POS] = ADC_SAMPLETIME_7CYCLES_5; }
-			else { data[ADC_SAMPLE_RATE_POS] = ADC_SAMPLETIME_1CYCLE_5; }
-
-			data[CAN_ID_POS]=((rxData1[2]<<8)+rxData1[3]);
-			if(data[ADC1_INPUTS_NUMB_POS]<=4) {data[CAN_DLC_POS]=data[ADC1_INPUTS_NUMB_POS]*2;}
-			else if(data[ADC1_INPUTS_NUMB_POS]<=8) {data[CAN_DLC_POS]=data[ADC1_INPUTS_NUMB_POS];}
-			else {data[CAN_DLC_POS]=8;} //this shouldn't actually happen in this section
-
-			data[MESSAGE_TIM_PERIOD_POS]=(rxData1[4]<<8)+rxData1[5];
-
-			Flash_Write(FLASH_PAGE_63, data, 6);
-		}
 	}
 	else
 	{
 		Error_Handler();
 	}
-}
-
-
-
-void Flash_Write(uint32_t Flash_Address, uint32_t Flash_Data[256], int Data_Words)
-{
-	FLASH_EraseInitTypeDef pEraseInit;
-	uint32_t pError = 0;
-
-	pEraseInit.PageAddress = Flash_Address;
-	pEraseInit.NbPages = 1;
-	pEraseInit.TypeErase = FLASH_TYPEERASE_PAGES;
-
-	__disable_irq();
-	if(HAL_FLASH_Unlock() != HAL_OK)
-	{
-		__enable_irq();
-		Error_Handler();
-	}
-
-	while(__HAL_FLASH_GET_FLAG(FLASH_FLAG_BSY) != 0) { }
-
-	HAL_FLASHEx_Erase(&pEraseInit, &pError);
-	for(int i=0; i<Data_Words; i++)
-	{
-		if(HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, Flash_Address+i*0x04, Flash_Data[i]) != HAL_OK)
-		{
-			__enable_irq();
-			Error_Handler();
-		}
-		while(__HAL_FLASH_GET_FLAG(FLASH_FLAG_BSY) != 0) { }
-	}
-
-	if(HAL_FLASH_Lock() != HAL_OK)
-	{
-		__enable_irq();
-		Error_Handler();
-	}
-	__enable_irq();
-}
-
-uint32_t Flash_Read(uint32_t Flash_Address)
-{
-	return *(uint32_t*)Flash_Address;
 }
 
 
