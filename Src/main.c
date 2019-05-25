@@ -2,10 +2,6 @@
 
 #include "sensorFunctions.h"
 
-//constants
-const int adc_channels[ADC_CHANNELS] = {ADC_CHANNEL_0, ADC_CHANNEL_1, ADC_CHANNEL_2, ADC_CHANNEL_3, ADC_CHANNEL_4, ADC_CHANNEL_5, ADC_CHANNEL_6, ADC_CHANNEL_7, ADC_CHANNEL_8};
-const int adc_ranks[ADC_CHANNELS] = {ADC_REGULAR_RANK_1, ADC_REGULAR_RANK_2, ADC_REGULAR_RANK_3, ADC_REGULAR_RANK_4, ADC_REGULAR_RANK_5, ADC_REGULAR_RANK_6, ADC_REGULAR_RANK_7, ADC_REGULAR_RANK_8, ADC_REGULAR_RANK_9};
-
 //global variables
 int adc1Values[ADC_CHANNELS], adc1Buffer[ADC_CHANNELS];
 
@@ -174,42 +170,42 @@ static void MX_ADC1_Init(void)
 	sConfig.SamplingTime = ADC_SAMPLE_RATE;
 
 
-	sConfig.Channel=ADC_CHANNEL_0;
+	sConfig.Channel=ADC_CHANNEL_1;
 	sConfig.Rank=ADC_REGULAR_RANK_1;
 	if(HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
 	{
 		Error_Handler();
 	}
 
-	sConfig.Channel=ADC_CHANNEL_1;
+	sConfig.Channel=ADC_CHANNEL_2;
 	sConfig.Rank=ADC_REGULAR_RANK_2;
 	if(HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
 	{
 		Error_Handler();
 	}
 
-	sConfig.Channel=ADC_CHANNEL_2;
+	sConfig.Channel=ADC_CHANNEL_4;
 	sConfig.Rank=ADC_REGULAR_RANK_3;
 	if(HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
 	{
 		Error_Handler();
 	}
 
-	sConfig.Channel=ADC_CHANNEL_3;
+	sConfig.Channel=ADC_CHANNEL_5;
 	sConfig.Rank=ADC_REGULAR_RANK_4;
 	if(HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
 	{
 		Error_Handler();
 	}
 
-	sConfig.Channel=ADC_CHANNEL_4;
+	sConfig.Channel=ADC_CHANNEL_6;
 	sConfig.Rank=ADC_REGULAR_RANK_5;
 	if(HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
 	{
 		Error_Handler();
 	}
 
-	sConfig.Channel=ADC_CHANNEL_5;
+	sConfig.Channel=ADC_CHANNEL_7;
 	sConfig.Rank=ADC_REGULAR_RANK_6;
 	if(HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
 	{
@@ -300,8 +296,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
 	if(htim->Instance == htim3.Instance)
 	{
-		txData1[0]=adc1Values[0]; //brake temperature
-		txData1[1]=INFKL800(adc1Values[0])&0xFF;
+		txData1[0]=INFKL800(adc1Values[0])&0xFF; //left brake temperature
+		txData1[1]=INFKL800(adc1Values[1])&0xFF; //right brake temperature
 		txData1[2]=adc1Values[2]; //rear suspension
 		txData1[3]=linearPot750mm12V(adc1Values[2]);
 		txData1[4]=adc1Values[4]; //front suspension
