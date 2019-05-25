@@ -19,7 +19,7 @@ extern "C" {
 #define CAN_ID 0x1A
 #define CAN_DLC ADC_CHANNELS
 
-#define MESSAGE_TIM_PERIOD 100 //this is in ??s
+#define MESSAGE_TIM_PERIOD 100 //this is in 100s of uSs
 
 
 //exported function prototypes
