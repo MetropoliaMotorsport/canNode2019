@@ -17,3 +17,11 @@ int linearPot750mm12V(int adc_value)
 {
 	return ((adc_value*twelveVoltMultiplier*750)/120000);
 }
+
+//.25 to 4.75v radiometric to 5V supply
+
+int RSC28xxx3621x_frontSuspension(int adc_value)
+{
+	int theta=((adc_value*fiveVoltMultiplier)/1250)-20;
+	return theta; //we don't actually care about the angle, but with this we can try and check that angle is correct
+}
