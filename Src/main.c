@@ -298,10 +298,11 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	{
 		txData1[0]=INFKL800(adc1Values[0])&0xFF; //left brake temperature
 		txData1[1]=INFKL800(adc1Values[1])&0xFF; //right brake temperature
-		txData1[2]=linearPot750mm12V(adc1Values[3]); //left rear suspension
-		txData1[3]=linearPot750mm12V(adc1Values[4]); //right rear suspension
-		txData1[4]=adc1Values[4]; //front suspension
-		txData1[5]=adc1Values[4];
+		txData1[2]=linearPot750mm12V(adc1Values[2]); //left rear suspension
+		txData1[3]=linearPot750mm12V(adc1Values[3]); //right rear suspension
+		//the angle offsets shouldn't be hardcoded, but they are for the moment
+		txData1[4]=RSC28xxx3621x_frontSuspension(adc1Values[4], 90); //right front suspension
+		txData1[5]=RSC28xxx3621x_frontSuspension(adc1Values[5], 90); //left front suspension
 
 		HAL_CAN_AddTxMessage(&hcan1, &txHeader1, txData1, &txMailbox1);
 	}

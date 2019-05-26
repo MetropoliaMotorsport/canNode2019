@@ -10,7 +10,7 @@ extern "C" {
 //function prototypes
 int INFKL800(int adc_value);
 int linearPot750mm12V(int adc_value);
-int RSC28xxx3621x_frontSuspension(int adc_value);
+int RSC28xxx3621x_frontSuspension(int adc_value, int offsetAngle);
 
 
 
