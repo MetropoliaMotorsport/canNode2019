@@ -299,7 +299,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	if(htim->Instance == htim3.Instance)
 	{
 		txData1[0]=(INFKL800(adc1Values[0])>>8)&0xFF;
-		txData1[1]=INFKL800(adc1Values[0])&0xFF; //left brake temperature
+		txData1[1]=INFKL800(adc1Values[0])&0xFF; //left brake temperature, in tenths of C
 		txData1[2]=linearPot750mm12V(adc1Values[2]); //left rear suspension
 		y=0;
 		txData1[3]=linearPot750mm12V(adc1Values[3]); //right rear suspension
@@ -310,7 +310,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		txData1[5]=RSC28xxx3621x_frontSuspension(adc1Values[5], 90); //left front suspension
 		y=0;
 		txData1[6]=(INFKL800(adc1Values[1])>>8)&0xFF;
-		txData1[7]=INFKL800(adc1Values[1])&0xFF; //right brake temperature
+		txData1[7]=INFKL800(adc1Values[1])&0xFF; //right brake temperature, in tenths of C
 
 		HAL_CAN_AddTxMessage(&hcan1, &txHeader1, txData1, &txMailbox1);
 	}
