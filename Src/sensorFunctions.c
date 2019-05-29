@@ -8,18 +8,22 @@
 
 
 
-int INFKL800(int adc_value)
+uint16_t INFKL800(int adc_value)
 {
 	return ((adc_value*fiveVoltMultiplier)/50)-100;
 }
 
-int linearPot750mm12V(int adc_value)
+volatile int x;
+
+int8_t linearPot750mm12V(int adc_value)
 {
+	x=((adc_value*twelveVoltMultiplier*750)/120000);
 	return ((adc_value*twelveVoltMultiplier*750)/120000);
 }
 
-int RSC28xxx3621x_frontSuspension(int adc_value, int offsetAngle) //offset angle isn't proper way to do this, but it will work
+int8_t RSC28xxx3621x_frontSuspension(int adc_value, int offsetAngle) //offset angle isn't proper way to do this, but it will work
 {
 	int theta=((adc_value*fiveVoltMultiplier)/125)-20;
+	x=(theta+offsetAngle)*335/360;
 	return (theta+offsetAngle)*335/360; //almost 1 mm/degree, should be improved with lookup table, maybe even straight from raw values
 }
