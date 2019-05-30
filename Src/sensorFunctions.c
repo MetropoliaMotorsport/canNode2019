@@ -10,7 +10,7 @@
 
 uint16_t INFKL800(int adc_value)
 {
-	return ((adc_value*fiveVoltMultiplier)/5)-100;
+	return ((adc_value*fiveVoltMultiplier)/5)-1000;
 }
 
 volatile int x;
