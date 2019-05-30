@@ -42,5 +42,5 @@ uint8_t rearLeftSuspension(int adc_value)
 
 uint8_t rearRightSuspension(int adc_value)
 {
-	return 278-(adc_value/53);
+	return 208-(adc_value/53);
 }
