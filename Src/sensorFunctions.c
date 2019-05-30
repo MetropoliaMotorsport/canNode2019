@@ -8,39 +8,54 @@
 
 
 
-uint16_t INFKL800(int adc_value)
+uint32_t average_adcs(uint32_t adc_values[ROLLAVGCNT])
+{
+	uint32_t total=0;
+	for(uint32_t i=0; i<ROLLAVGCNT; i++)
+	{
+		total+=adc_values[i];
+	}
+	//return total/ROLLAVGCNT;
+	return adc_values[0];
+}
+
+uint16_t INFKL800(uint32_t adc_value)
 {
 	return ((adc_value*fiveVoltMultiplier)/5)-1000;
 }
 
-int8_t linearPot750mm12V(int adc_value) //this should also be tried to be fixed and probably split into two sometime
+int8_t linearPot750mm12V(uint32_t adc_value) //this should also be tried to be fixed and probably split into two sometime
 {
 	return ((adc_value*twelveVoltMultiplier*75)/120000);
 }
 
 //this should be changed 36 to 12, and lookup table should be made sometime, or at least redo the equations for that
-int8_t RSC28xxx3621x_frontSuspension(int adc_value) //120 degrees, split to left and right as well becuase they go different ways
+int8_t RSC28xxx3621x_frontSuspension(uint32_t adc_value) //120 degrees, split to left and right as well becuase they go different ways
 {
 	int theta=((adc_value*fiveVoltMultiplier)/375)-20;
 	return (theta)*335/360; //almost 1 mm/degree, should be improved with lookup table, maybe even straight from raw values
 }
 
-uint8_t frontLeftSuspension(int adc_value)
+volatile int x, y;
+
+uint8_t frontLeftSuspension(uint32_t adc_value)
 {
+	x=adc_value;
+	y=248-(adc_value/32);
 	return 248-(adc_value/32);
 }
 
-uint8_t frontRightSuspension(int adc_value)
+uint8_t frontRightSuspension(uint32_t adc_value)
 {
 	return (adc_value/32)+100;
 }
 
-uint8_t rearLeftSuspension(int adc_value)
+uint8_t rearLeftSuspension(uint32_t adc_value)
 {
 	return 278-(adc_value/5);
 }
 
-uint8_t rearRightSuspension(int adc_value)
+uint8_t rearRightSuspension(uint32_t adc_value)
 {
 	return 208-(adc_value/53);
 }

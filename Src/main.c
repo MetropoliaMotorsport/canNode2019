@@ -3,7 +3,8 @@
 #include "sensorFunctions.h"
 
 //global variables
-int adc1Values[ADC_CHANNELS], adc1Buffer[ADC_CHANNELS];
+uint32_t adc1Values[ADC_CHANNELS][ROLLAVGCNT], adc1Buffer[ADC_CHANNELS];
+uint32_t adc1Position = 0;
 
 ADC_HandleTypeDef hadc1;
 DMA_HandleTypeDef hdma_adc1;
@@ -283,7 +284,12 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *AdcHandle)
 	{
 		for(int i=0; i<ADC_CHANNELS; i++)
 		{
-			adc1Values[i]=adc1Buffer[i];
+			adc1Values[i][adc1Position]=adc1Buffer[i];
+		}
+		adc1Position++;
+		if(adc1Position>=ROLLAVGCNT)
+		{
+			adc1Position=0;
 		}
 	}
 	else
@@ -298,14 +304,14 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
 	if(htim->Instance == htim3.Instance)
 	{
-		txData1[0]=(INFKL800(adc1Values[0])>>8)&0xFF;
-		txData1[1]=INFKL800(adc1Values[0])&0xFF; //left brake temperature, in tenths of C
-		txData1[2]=rearLeftSuspension(adc1Values[2]); //left rear suspension
-		txData1[3]=rearRightSuspension(adc1Values[3]); //right rear suspension
-		txData1[4]=frontRightSuspension(adc1Values[4]); //right front suspension
-		txData1[5]=frontLeftSuspension(adc1Values[5]); //left front suspension
-		txData1[6]=(INFKL800(adc1Values[1])>>8)&0xFF;
-		txData1[7]=INFKL800(adc1Values[1])&0xFF; //right brake temperature, in tenths of C
+		txData1[0]=(INFKL800(average_adcs(adc1Values[0]))>>8)&0xFF;
+		txData1[1]=INFKL800(average_adcs(adc1Values[0]))&0xFF; //left brake temperature, in tenths of C
+		txData1[2]=rearLeftSuspension(average_adcs(adc1Values[2])); //left rear suspension
+		txData1[3]=rearRightSuspension(average_adcs(adc1Values[3])); //right rear suspension
+		txData1[4]=frontRightSuspension(average_adcs(adc1Values[4])); //right front suspension
+		txData1[5]=frontLeftSuspension(average_adcs(adc1Values[5])); //left front suspension
+		txData1[6]=(INFKL800(average_adcs(adc1Values[1]))>>8)&0xFF;
+		txData1[7]=INFKL800(average_adcs(adc1Values[1]))&0xFF; //right brake temperature, in tenths of C
 
 		HAL_CAN_AddTxMessage(&hcan1, &txHeader1, txData1, &txMailbox1);
 	}
