@@ -13,17 +13,34 @@ uint16_t INFKL800(int adc_value)
 	return ((adc_value*fiveVoltMultiplier)/5)-1000;
 }
 
-volatile int x;
-
-int8_t linearPot750mm12V(int adc_value)
+int8_t linearPot750mm12V(int adc_value) //this should also be tried to be fixed and probably split into two sometime
 {
-	x=((adc_value*twelveVoltMultiplier*750)/120000);
-	return ((adc_value*twelveVoltMultiplier*750)/120000);
+	return ((adc_value*twelveVoltMultiplier*75)/120000);
 }
 
-int8_t RSC28xxx3621x_frontSuspension(int adc_value, int offsetAngle) //offset angle isn't proper way to do this, but it will work
+//this should be changed 36 to 12, and lookup table should be made sometime, or at least redo the equations for that
+int8_t RSC28xxx3621x_frontSuspension(int adc_value) //120 degrees, split to left and right as well becuase they go different ways
 {
-	int theta=((adc_value*fiveVoltMultiplier)/125)-20;
-	x=(theta+offsetAngle)*335/360;
-	return (theta+offsetAngle)*335/360; //almost 1 mm/degree, should be improved with lookup table, maybe even straight from raw values
+	int theta=((adc_value*fiveVoltMultiplier)/375)-20;
+	return (theta)*335/360; //almost 1 mm/degree, should be improved with lookup table, maybe even straight from raw values
+}
+
+uint8_t frontLeftSuspension(int adc_value)
+{
+	return 248-(adc_value/32);
+}
+
+uint8_t frontRightSuspension(int adc_value)
+{
+	return (adc_value/32)+100;
+}
+
+uint8_t rearLeftSuspension(int adc_value)
+{
+	return 278-(adc_value/5);
+}
+
+uint8_t rearRightSuspension(int adc_value)
+{
+	return 278-(adc_value/53);
 }

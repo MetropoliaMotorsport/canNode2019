@@ -300,15 +300,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	{
 		txData1[0]=(INFKL800(adc1Values[0])>>8)&0xFF;
 		txData1[1]=INFKL800(adc1Values[0])&0xFF; //left brake temperature, in tenths of C
-		txData1[2]=linearPot750mm12V(adc1Values[2]); //left rear suspension
-		y=0;
-		txData1[3]=linearPot750mm12V(adc1Values[3]); //right rear suspension
-		y=0;
-		//the angle offsets shouldn't be hardcoded, but they are for the moment
-		txData1[4]=RSC28xxx3621x_frontSuspension(adc1Values[4], 90); //right front suspension
-		y=0;
-		txData1[5]=RSC28xxx3621x_frontSuspension(adc1Values[5], 90); //left front suspension
-		y=0;
+		txData1[2]=rearLeftSuspension(adc1Values[2]); //left rear suspension
+		txData1[3]=rearRightSuspension(adc1Values[3]); //right rear suspension
+		txData1[4]=frontRightSuspension(adc1Values[4]); //right front suspension
+		txData1[5]=frontLeftSuspension(adc1Values[5]); //left front suspension
 		txData1[6]=(INFKL800(adc1Values[1])>>8)&0xFF;
 		txData1[7]=INFKL800(adc1Values[1])&0xFF; //right brake temperature, in tenths of C
 
