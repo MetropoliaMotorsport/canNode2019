@@ -40,8 +40,6 @@ volatile int x, y;
 
 uint8_t frontLeftSuspension(uint32_t adc_value)
 {
-	x=adc_value;
-	y=248-(adc_value/32);
 	return 248-(adc_value/32);
 }
 
@@ -52,7 +50,9 @@ uint8_t frontRightSuspension(uint32_t adc_value)
 
 uint8_t rearLeftSuspension(uint32_t adc_value)
 {
-	return 278-(adc_value/5);
+	x=adc_value;
+	y=208-(adc_value/51);
+	return 208-(adc_value/51);
 }
 
 uint8_t rearRightSuspension(uint32_t adc_value)
