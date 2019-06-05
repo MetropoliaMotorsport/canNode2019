@@ -16,7 +16,7 @@ uint32_t average_adcs(uint32_t adc_values[ROLLAVGCNT])
 		total+=adc_values[i];
 	}
 	//return total/ROLLAVGCNT;
-	return adc_values[0];
+	return total/ROLLAVGCNT;
 }
 
 uint16_t INFKL800(uint32_t adc_value)

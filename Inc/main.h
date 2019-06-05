@@ -23,7 +23,7 @@ extern "C" {
 
 #define MESSAGE_TIM_PERIOD 100 //this is in 100s of uSs
 
-#define ROLLAVGCNT 1//0
+#define ROLLAVGCNT 10
 
 
 //exported function prototypes
