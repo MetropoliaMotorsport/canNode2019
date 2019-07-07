@@ -171,42 +171,42 @@ static void MX_ADC1_Init(void)
 	sConfig.SamplingTime = ADC_SAMPLE_RATE;
 
 
-	sConfig.Channel=ADC_CHANNEL_1;
+	sConfig.Channel=ADC_CHANNEL_9;
 	sConfig.Rank=ADC_REGULAR_RANK_1;
 	if(HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
 	{
 		Error_Handler();
 	}
 
-	sConfig.Channel=ADC_CHANNEL_2;
+	sConfig.Channel=ADC_CHANNEL_8;
 	sConfig.Rank=ADC_REGULAR_RANK_2;
 	if(HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
 	{
 		Error_Handler();
 	}
 
-	sConfig.Channel=ADC_CHANNEL_4;
+	sConfig.Channel=ADC_CHANNEL_2;
 	sConfig.Rank=ADC_REGULAR_RANK_3;
 	if(HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
 	{
 		Error_Handler();
 	}
 
-	sConfig.Channel=ADC_CHANNEL_5;
+	sConfig.Channel=ADC_CHANNEL_3;
 	sConfig.Rank=ADC_REGULAR_RANK_4;
 	if(HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
 	{
 		Error_Handler();
 	}
 
-	sConfig.Channel=ADC_CHANNEL_6;
+	sConfig.Channel=ADC_CHANNEL_1;
 	sConfig.Rank=ADC_REGULAR_RANK_5;
 	if(HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
 	{
 		Error_Handler();
 	}
 
-	sConfig.Channel=ADC_CHANNEL_7;
+	sConfig.Channel=ADC_CHANNEL_0;
 	sConfig.Rank=ADC_REGULAR_RANK_6;
 	if(HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
 	{
